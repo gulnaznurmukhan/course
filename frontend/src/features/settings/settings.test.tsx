@@ -47,7 +47,9 @@ describe('settings', () => {
     const fetchMock = backend()
     renderApp('/settings')
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Русский' }))
+    // The header has its own RU/KZ/EN switcher; the settings page one comes last
+    const buttons = await screen.findAllByRole('button', { name: 'RU' })
+    await userEvent.click(buttons[buttons.length - 1])
 
     await waitFor(() => {
       const [call] = calls(fetchMock, '/users/me', 'PATCH')

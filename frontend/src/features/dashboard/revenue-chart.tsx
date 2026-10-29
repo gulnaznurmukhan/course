@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { apiFetch } from '@/lib/api'
@@ -48,20 +47,20 @@ export function RevenueChart() {
   const showLabel = (i: number) => i % 2 === lastIndex % 2
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('revenue.title')}</CardTitle>
-        <CardDescription>{t('revenue.hint')}</CardDescription>
+    <div className="min-w-0">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <span className="cf-eyebrow">{t('revenue.title')}</span>
+          <p className="mt-1 text-sm text-muted-foreground">{t('revenue.hint')}</p>
+        </div>
         {currencies.length > 1 ? (
-          <CardAction>
-            <Select value={selected} onValueChange={setCurrency}>
-              <SelectTrigger size="sm" className="w-24" aria-label={t('revenue.currency')}><SelectValue /></SelectTrigger>
-              <SelectContent>{currencies.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </CardAction>
+          <Select value={selected} onValueChange={setCurrency}>
+            <SelectTrigger size="sm" className="w-24 font-mono text-xs" aria-label={t('revenue.currency')}><SelectValue /></SelectTrigger>
+            <SelectContent>{currencies.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
         ) : null}
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div>
         {!selected || max === 0 ? (
           <p className="text-sm text-muted-foreground">{t('revenue.empty')}</p>
         ) : (
@@ -85,7 +84,7 @@ export function RevenueChart() {
                       onMouseLeave={() => setActive(null)}
                       onFocus={() => setActive(i)}
                       onBlur={() => setActive(null)}
-                      className="cf-grow-y w-full max-w-6 rounded-t-[4px] bg-[var(--viz-series-1)] outline-none transition-opacity duration-150 focus-visible:ring-2 focus-visible:ring-ring"
+                      className={`cf-grow-y w-full max-w-6 rounded-t-[4px] ${i === lastIndex ? 'bg-[var(--viz-highlight)]' : 'bg-[var(--viz-series-1)]'} outline-none transition-opacity duration-150 focus-visible:ring-2 focus-visible:ring-ring`}
                       style={{
                         height: `${Math.max(value > 0 ? 2 : 0, (value / max) * 85)}%`,
                         opacity: active !== null && active !== i ? 0.4 : 1,
@@ -111,7 +110,7 @@ export function RevenueChart() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

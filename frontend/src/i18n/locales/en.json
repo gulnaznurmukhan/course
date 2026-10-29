@@ -113,15 +113,16 @@
   },
   "language": {
     "label": "Language",
-    "kk": "Қазақша",
-    "ru": "Русский",
-    "en": "English"
+    "kk": "KZ",
+    "ru": "RU",
+    "en": "EN"
   },
   "theme": {
     "label": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "pink": "Pink"
   },
   "errors": {
     "NETWORK": "Unable to reach the server. Check your connection.",
@@ -405,7 +406,13 @@
     "upcomingHint": "Next 7 days",
     "noUpcoming": "No deadlines in the next 7 days",
     "recent": "Recent activity",
-    "share": "{{value}} of {{total}} ({{percent}}%)"
+    "share": "{{value}} of {{total}} ({{percent}}%)",
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "day": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}",
+      "night": "Good night, {{name}}"
+    }
   },
   "reports": {
     "title": "Reports",
@@ -628,11 +635,90 @@
     "empty": "No deadlines this month"
   },
   "scene": {
-    "client": "Client",
-    "clientName": "Asel Nurlanova",
-    "order": "Order",
-    "orderTitle": "Website redesign",
-    "payment": "Payment",
-    "paid": "Paid in full"
+    "headline": "Clients. Orders. Payments.",
+    "sub": "One flow, one screen",
+    "income": "Received this month",
+    "events": {
+      "payment": {
+        "title": "Payment received",
+        "meta": "ORD-000128 · Kaspi",
+        "meta2": "ORD-000126 · transfer"
+      },
+      "order": {
+        "title": "New order",
+        "meta": "Logo for a coffee shop"
+      },
+      "client": {
+        "title": "New client",
+        "meta": "Madina Seitkali"
+      },
+      "invoice": {
+        "title": "Invoice sent",
+        "meta": "ORD-000131 · 48 000 ₸"
+      },
+      "done": {
+        "title": "Order completed",
+        "meta": "ORD-000126 · Brand identity"
+      }
+    }
+  },
+  "palette": {
+    "trigger": "Search and commands",
+    "title": "Search and commands",
+    "description": "Find an order or client, open a page, switch theme or language",
+    "placeholder": "Order, client, page or command…",
+    "orders": "Orders",
+    "clients": "Clients",
+    "goTo": "Go to",
+    "appearance": "Appearance",
+    "searchAll": "All orders matching “{{text}}”",
+    "empty": "Nothing found",
+    "move": "move",
+    "open": "open"
+  },
+  "collect": {
+    "title": "Money to collect",
+    "hint": "Balances on active orders and when to expect them",
+    "bucket": {
+      "overdue": "Overdue",
+      "week": "Next 7 days",
+      "month": "Within 30 days",
+      "later": "Later or no date"
+    },
+    "noDeadline": "no deadline",
+    "today": "due today",
+    "overdueBy_one": "{{count}} day overdue",
+    "overdueBy_other": "{{count}} days overdue",
+    "dueIn_one": "in {{count}} day",
+    "dueIn_other": "in {{count}} days",
+    "remind": "Remind",
+    "dialogTitle": "Reminder: {{name}}",
+    "balance": "balance",
+    "tone": "Tone",
+    "tones": {
+      "soft": "Gentle",
+      "neutral": "Neutral",
+      "firm": "Firm"
+    },
+    "language": "Message language",
+    "message": "Message text",
+    "addLink": "Add order link",
+    "linkAdded": "Link added",
+    "linkFailed": "Could not create the link",
+    "addRequisites": "Payment details",
+    "copy": "Copy",
+    "copied": "Text copied",
+    "copyFailed": "Could not copy",
+    "noPhone": "The client has no phone number, so there is no WhatsApp button."
+  },
+  "remind": {
+    "soft": "Hi {{name}}! A quick reminder about order {{number}} “{{title}}”: {{amount}} is still due{{due}}. If you have already paid, just let me know and I will mark it. Thank you!",
+    "neutral": "Hello {{name}}. The remaining balance for order {{number}} “{{title}}” is {{amount}}{{due}}. Could you let me know when you plan to pay?",
+    "firm": "Hello {{name}}. Please pay the outstanding {{amount}} for order {{number}} “{{title}}”{{due}}. If you have questions about the invoice, please reply today.",
+    "dueBy": " by {{date}}",
+    "dueWas": " (it was due on {{date}})",
+    "requisites": "Payment details:",
+    "link": "Order online: {{url}}",
+    "subject": "Payment for order {{number}}"
   }
 }

@@ -14,7 +14,7 @@ export function PageHeader({ title, description, actions }: {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">{title}</h1>
+        <h1 className="text-[1.75rem] leading-none font-medium tracking-[-0.035em] sm:text-[2rem]">{title}</h1>
         {description ? <div className="mt-1 text-sm text-muted-foreground">{description}</div> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -33,7 +33,7 @@ export function Page({ children, className }: { children: ReactNode; className?:
  */
 export function TableFrame({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('min-w-0 overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)] ring-1 ring-foreground/10', className)}>
+    <div className={cn('min-w-0 overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)] ring-1 ring-foreground/[0.07]', className)}>
       {children}
     </div>
   )

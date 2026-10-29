@@ -1,13 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant pink (&:is(.pink *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -42,103 +45,192 @@
     --color-success: var(--success);
     --color-success-foreground: var(--success-foreground);
     --color-warning: var(--warning);
+    --color-signal: var(--signal);
+    --color-voltage: var(--voltage);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --radius-xl: calc(var(--radius) * 1.5);
+    --radius-2xl: calc(var(--radius) * 2);
+    --radius-3xl: calc(var(--radius) * 2.5);
+    --radius-4xl: calc(var(--radius) * 3);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 /*
- * Palette: warm paper neutrals with a single deep indigo accent (hue 265).
- * Greys carry a hint of that hue so surfaces, borders and text feel like one material.
- * No gradients, no neon: depth comes from layered surfaces, rings and soft shadows.
+ * Palette after DESIGN.md ("institutional blueprint on vellum"):
+ * inkwell navy text on a fog canvas, white cards that float on navy-tinted
+ * shadows, mint as the only data/focus signal and voltage chartreuse as a rare
+ * punctuation. Filled buttons are ink, never a chromatic colour.
+ * Three themes: light, dark (neutral graphite / black) and pink (rose canvas).
  */
 :root {
     color-scheme: light;
-    --background: oklch(0.975 0.004 80);
-    --foreground: oklch(0.22 0.015 265);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.22 0.015 265);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.22 0.015 265);
-    --primary: oklch(0.42 0.17 265);
-    --primary-foreground: oklch(0.985 0.005 265);
-    --secondary: oklch(0.955 0.008 265);
-    --secondary-foreground: oklch(0.3 0.03 265);
-    --muted: oklch(0.955 0.006 80);
-    --muted-foreground: oklch(0.5 0.02 265);
-    --accent: oklch(0.94 0.02 265);
-    --accent-foreground: oklch(0.3 0.08 265);
-    --destructive: oklch(0.55 0.21 25);
-    --success: oklch(0.55 0.15 155);
-    --success-foreground: oklch(0.985 0 0);
-    --warning: oklch(0.7 0.16 70);
-    --border: oklch(0.9 0.008 265);
-    --input: oklch(0.88 0.01 265);
-    --ring: oklch(0.55 0.15 265);
-    --chart-1: oklch(0.55 0.17 265);
-    --chart-2: oklch(0.7 0.12 265);
-    --chart-3: oklch(0.82 0.07 265);
-    --chart-4: oklch(0.6 0.02 265);
-    --chart-5: oklch(0.45 0.02 265);
-    --radius: 0.75rem;
-    --sidebar: oklch(0.985 0.004 80);
-    --sidebar-foreground: oklch(0.3 0.02 265);
-    --sidebar-primary: oklch(0.42 0.17 265);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.94 0.02 265);
-    --sidebar-accent-foreground: oklch(0.3 0.08 265);
-    --sidebar-border: oklch(0.9 0.008 265);
-    --sidebar-ring: oklch(0.55 0.15 265);
-    --viz-series-1: #4f5bd5;
-    --shadow-card: 0 1px 2px oklch(0.2 0.02 265 / 0.06), 0 1px 1px oklch(0.2 0.02 265 / 0.04);
-    --shadow-raised: 0 8px 24px -8px oklch(0.2 0.03 265 / 0.22), 0 2px 6px -2px oklch(0.2 0.03 265 / 0.1);
+    --background: #edf0f2;
+    --foreground: #1a2b3b;
+    --card: #ffffff;
+    --card-foreground: #1a2b3b;
+    --popover: #ffffff;
+    --popover-foreground: #1a2b3b;
+    --primary: #1a2b3b;
+    --primary-foreground: #ffffff;
+    --secondary: #e1e5e9;
+    --secondary-foreground: #314352;
+    --muted: #edf0f2;
+    --muted-foreground: #687887;
+    --accent: #dcf9f0;
+    --accent-foreground: #0d6b52;
+    --destructive: #b4393a;
+    --success: #0f9c76;
+    --success-foreground: #ffffff;
+    --warning: #c99a00;
+    --signal: #31f2bf;
+    --voltage: #e4ff33;
+    --border: #d6dbe0;
+    --input: #caced2;
+    --ring: #20cf9f;
+    --chart-1: #1a2b3b;
+    --chart-2: #14b58e;
+    --chart-3: #8995a1;
+    --chart-4: #caced2;
+    --chart-5: #687887;
+    --radius: 0.5rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #314352;
+    --sidebar-primary: #1a2b3b;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #edf0f2;
+    --sidebar-accent-foreground: #1a2b3b;
+    --sidebar-border: #e1e5e9;
+    --sidebar-ring: #20cf9f;
+    --viz-series-1: #1a2b3b;
+    --viz-highlight: #14b58e;
+    --shadow-card: 0 1px 2px rgba(12, 25, 39, 0.04), 0 6px 14px -6px rgba(12, 25, 39, 0.1);
+    --shadow-raised: 0 6px 8px rgba(12, 25, 39, 0.05), 0 16px 20px rgba(12, 25, 39, 0.06), 0 50px 60px rgba(12, 25, 39, 0.1);
+    --shadow-button: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    /* sign-in hero: deep space with a pink particle galaxy */
+    --hero-bg: #07070d;
+    --hero-fg: #f1f1f6;
+    --hero-muted: #8f8fa3;
+    --hero-line: rgba(255, 255, 255, 0.1);
+    --hero-card: rgba(255, 255, 255, 0.05);
+    --hero-a: #ff8cc6;
+    --hero-b: #8fe9ff;
+    --hero-p1: #fff3fa;
+    --hero-p2: #ff73b4;
+    --hero-p3: #6f8bff;
 }
 
 .dark {
     color-scheme: dark;
-    --background: oklch(0.17 0.012 265);
-    --foreground: oklch(0.94 0.006 80);
-    --card: oklch(0.215 0.014 265);
-    --card-foreground: oklch(0.94 0.006 80);
-    --popover: oklch(0.23 0.015 265);
-    --popover-foreground: oklch(0.94 0.006 80);
-    --primary: oklch(0.74 0.13 265);
-    --primary-foreground: oklch(0.17 0.03 265);
-    --secondary: oklch(0.27 0.018 265);
-    --secondary-foreground: oklch(0.9 0.01 265);
-    --muted: oklch(0.26 0.014 265);
-    --muted-foreground: oklch(0.68 0.015 265);
-    --accent: oklch(0.3 0.04 265);
-    --accent-foreground: oklch(0.9 0.04 265);
-    --destructive: oklch(0.68 0.18 25);
-    --success: oklch(0.72 0.14 155);
-    --success-foreground: oklch(0.17 0 0);
-    --warning: oklch(0.78 0.15 75);
-    --border: oklch(1 0 0 / 9%);
-    --input: oklch(1 0 0 / 13%);
-    --ring: oklch(0.65 0.13 265);
-    --chart-1: oklch(0.72 0.13 265);
-    --chart-2: oklch(0.6 0.12 265);
-    --chart-3: oklch(0.45 0.09 265);
-    --chart-4: oklch(0.6 0.02 265);
-    --chart-5: oklch(0.8 0.01 265);
-    --sidebar: oklch(0.15 0.012 265);
-    --sidebar-foreground: oklch(0.85 0.01 265);
-    --sidebar-primary: oklch(0.74 0.13 265);
-    --sidebar-primary-foreground: oklch(0.17 0.03 265);
-    --sidebar-accent: oklch(0.28 0.03 265);
-    --sidebar-accent-foreground: oklch(0.92 0.03 265);
-    --sidebar-border: oklch(1 0 0 / 8%);
-    --sidebar-ring: oklch(0.65 0.13 265);
-    --viz-series-1: #7b86ea;
-    --shadow-card: 0 1px 2px oklch(0 0 0 / 0.4);
-    --shadow-raised: 0 12px 32px -10px oklch(0 0 0 / 0.6), 0 2px 6px -2px oklch(0 0 0 / 0.4);
+    --background: #0c0c0e;
+    --foreground: #ececef;
+    --card: #151518;
+    --card-foreground: #ececef;
+    --popover: #1b1b1f;
+    --popover-foreground: #ececef;
+    --primary: #f2f2f4;
+    --primary-foreground: #0c0c0e;
+    --secondary: #212125;
+    --secondary-foreground: #d9d9de;
+    --muted: #1a1a1e;
+    --muted-foreground: #8d8d96;
+    --accent: rgba(49, 242, 191, 0.12);
+    --accent-foreground: #5ff5cf;
+    --destructive: #f07a7a;
+    --success: #3fe0b2;
+    --success-foreground: #0c0c0e;
+    --warning: #ffd84d;
+    --signal: #31f2bf;
+    --voltage: #e4ff33;
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.13);
+    --ring: #31f2bf;
+    --chart-1: #ececef;
+    --chart-2: #31f2bf;
+    --chart-3: #8d8d96;
+    --chart-4: #3a3a40;
+    --chart-5: #c8c8cf;
+    --sidebar: #08080a;
+    --sidebar-foreground: #c6c6cd;
+    --sidebar-primary: #f2f2f4;
+    --sidebar-primary-foreground: #0c0c0e;
+    --sidebar-accent: #1c1c20;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-ring: #31f2bf;
+    --viz-series-1: #d4d4da;
+    --viz-highlight: #31f2bf;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+    --shadow-raised: 0 12px 32px -10px rgba(0, 0, 0, 0.8), 0 2px 6px -2px rgba(0, 0, 0, 0.6);
+    --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.6);
+    --hero-bg: #050506;
+    --hero-fg: #f2f2f4;
+    --hero-muted: #8d8d96;
+    --hero-line: rgba(255, 255, 255, 0.1);
+    --hero-card: rgba(255, 255, 255, 0.05);
+    --hero-a: #ff8cc6;
+    --hero-b: #b9a4ff;
+    --hero-p1: #fff3f9;
+    --hero-p2: #ff6fae;
+    --hero-p3: #8c6bff;
+}
+
+/* Pink: the whole canvas is rose, cards are blush, raspberry is the filled action. */
+.pink {
+    color-scheme: light;
+    --background: #fbdde9;
+    --foreground: #4a1430;
+    --card: #fff2f7;
+    --card-foreground: #4a1430;
+    --popover: #fff2f7;
+    --popover-foreground: #4a1430;
+    --primary: #c2185b;
+    --primary-foreground: #ffffff;
+    --secondary: #f8c9dc;
+    --secondary-foreground: #7a1f4b;
+    --muted: #f9d3e2;
+    --muted-foreground: #9a4f74;
+    --accent: #ffc4dc;
+    --accent-foreground: #a3124f;
+    --destructive: #b4262f;
+    --success: #1f9a6c;
+    --success-foreground: #ffffff;
+    --warning: #c27c00;
+    --signal: #ff4f9a;
+    --voltage: #ffd166;
+    --border: #f2b5cd;
+    --input: #eba5c2;
+    --ring: #ec4f92;
+    --chart-1: #c2185b;
+    --chart-2: #ff6fae;
+    --chart-3: #c48aa5;
+    --chart-4: #f2b5cd;
+    --chart-5: #7a1f4b;
+    --sidebar: #f7c6da;
+    --sidebar-foreground: #6b1a42;
+    --sidebar-primary: #c2185b;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f2a9c8;
+    --sidebar-accent-foreground: #4a1430;
+    --sidebar-border: #eeb0c9;
+    --sidebar-ring: #ec4f92;
+    --viz-series-1: #c2185b;
+    --viz-highlight: #ff6fae;
+    --shadow-card: 0 1px 2px rgba(140, 20, 70, 0.08), 0 6px 14px -6px rgba(140, 20, 70, 0.18);
+    --shadow-raised: 0 6px 8px rgba(140, 20, 70, 0.06), 0 16px 20px rgba(140, 20, 70, 0.09), 0 50px 60px rgba(140, 20, 70, 0.14);
+    --shadow-button: 0 1px 3px rgba(120, 10, 60, 0.22), 0 1px 2px -1px rgba(120, 10, 60, 0.14);
+    --hero-bg: #1f0714;
+    --hero-fg: #fff0f6;
+    --hero-muted: #d49ab7;
+    --hero-line: rgba(255, 220, 236, 0.14);
+    --hero-card: rgba(255, 190, 220, 0.08);
+    --hero-a: #ff7ab6;
+    --hero-b: #ffd166;
+    --hero-p1: #fff6e8;
+    --hero-p2: #ff4f9a;
+    --hero-p3: #ffb36b;
 }
 
 @layer base {
@@ -148,6 +240,8 @@
   html {
     @apply font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
+    letter-spacing: -0.01em;
+    font-feature-settings: "cv11", "ss01";
   }
   body {
     @apply bg-background text-foreground;
@@ -155,7 +249,12 @@
   }
   h1, h2, h3 {
     text-wrap: balance;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+  }
+  code, kbd, samp, pre, .font-mono {
+    font-feature-settings: "ss01", "ss02", "zero";
+    font-variant-numeric: tabular-nums;
   }
   button, [role="button"], a, input, select, textarea, label {
     touch-action: manipulation;
@@ -239,16 +338,34 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   animation: cf-shimmer 1.6s ease-in-out infinite;
 }
 .dark .cf-skeleton::after {
-  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }
 /* Numbers that tick in */
 .cf-num {
   display: inline-block;
   animation: cf-rise 0.6s var(--ease-out-expo) both;
+}
+
+/* A surface that holds a whole section: one white sheet instead of many tiles */
+.cf-sheet {
+  background: var(--card);
+  color: var(--card-foreground);
+  border-radius: calc(var(--radius) * 1.5);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  outline-offset: -1px;
+}
+/* Small uppercase label used over figures */
+.cf-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -270,15 +387,34 @@
   body { background: white; }
 }
 
-/* ---------------------------------------------------------------- sign-in scene */
-@keyframes cf-float {
-  0%, 100% { transform: translateY(0) translateZ(0); }
-  50%      { transform: translateY(-10px) translateZ(0); }
+/* ---------------------------------------------------------------- sign-in hero
+ * A space panel with one large object: a particle galaxy drawn on canvas
+ * (galaxy-scene.tsx). Ledger events float around it as small glass tickets and
+ * stream into the core. Tickets animate transform / opacity only.
+ */
+.cf-hero {
+  background: var(--hero-bg);
+  color: var(--hero-fg);
 }
-.cf-float {
-  animation: cf-float 5s ease-in-out infinite;
-  animation-delay: var(--d, 0s);
+.cf-ticket {
+  background: var(--hero-card);
+  box-shadow: inset 0 0 0 1px var(--hero-line), 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.9s var(--ease-out-expo);
+}
+.cf-ticket[data-state="hidden"] {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0) scale(0.96);
+}
+.cf-ticket[data-state="shown"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.cf-ticket[data-state="gone"] {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0) scale(0.98);
 }
 @media (prefers-reduced-motion: reduce) {
-  .cf-float { animation: none; }
-  }
+  .cf-ticket { transition: none; }
+}

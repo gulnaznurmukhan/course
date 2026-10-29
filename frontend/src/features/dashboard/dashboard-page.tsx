@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertTriangle, ArrowUpRight, CheckCircle2, Clock, Package, Users } from 'lucide-react'
+import { ArrowUpRight, Clock } from 'lucide-react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -7,13 +7,15 @@ import { Link } from 'react-router'
 import { ActivityList } from '@/components/activity-list'
 import { ApiErrorAlert } from '@/components/api-error-alert'
 import { ListSkeleton, Page, PageHeader } from '@/components/page-parts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useCurrentUser } from '@/features/auth/use-auth'
 import { OrderStatusBadge } from '@/features/orders/order-status-badge'
 import { useWorkspace } from '@/features/workspace/workspace-context'
+import i18n from '@/i18n'
 import { formatDate, formatMoney, todayIso } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { reportsApi, type CurrencyAmount } from './api'
+import { Receivables } from './receivables'
 import { RevenueChart } from './revenue-chart'
 import { StatusBarChart } from './status-bar-chart'
 
@@ -28,69 +30,101 @@ function periodRange(period: Period): { from: string; to: string } {
   return { from: iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)), to }
 }
 
+function dayPart(hour: number) {
+  if (hour < 5) return 'night'
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'day'
+  return 'evening'
+}
+
+/** "Good evening, Aigerim · Thursday, 29 October" */
+function Greeting() {
+  const { t } = useTranslation()
+  const { data: user } = useCurrentUser()
+  const [now] = useState(() => new Date())
+  const lng = i18n.resolvedLanguage
+  const date = new Intl.DateTimeFormat(lng === 'kk' ? 'kk-KZ' : lng === 'en' ? 'en-US' : 'ru-RU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(now)
+  const name = user?.fullName.split(/\s+/)[0] ?? ''
+  return (
+    <>
+      {t(`dashboard.greeting.${dayPart(now.getHours())}`, { name })}
+      <span className="mx-2 text-foreground/20" aria-hidden>/</span>
+      <span className="inline-block first-letter:uppercase">{date}</span>
+    </>
+  )
+}
+
 const delay = (i: number) => ({ '--cf-i': i }) as CSSProperties
 
-function StatTile({ label, value, icon: Icon, to, tone, index }: {
+/*
+ * The dashboard is three sheets, not a wall of tiles:
+ *   1. one ledger strip with the four counts side by side,
+ *   2. the money sheet: received / outstanding figures over the revenue columns,
+ *   3. the work sheet: orders by status and the nearest deadlines,
+ * then the money still to collect (with payment reminders) and the team activity.
+ */
+
+/** One figure in the ledger strip. */
+function Figure({ label, value, to, tone, index }: {
   label: string
   value: number
-  icon: typeof Users
   to?: string
   tone?: 'warning'
   index: number
 }) {
   const warn = tone === 'warning' && value > 0
-  const content = (
-    <Card
-      className={cn('cf-lift h-full', to && 'group cursor-pointer')}
-      style={delay(index)}
-    >
-      <CardHeader>
-        <CardDescription className="flex items-center gap-2">
-          <span className={cn('flex size-7 items-center justify-center rounded-md', warn ? 'bg-destructive/10 text-destructive' : 'bg-accent text-accent-foreground')}>
-            <Icon className="size-4" aria-hidden />
-          </span>
-          <span className="min-w-0 truncate">{label}</span>
-          {to ? <ArrowUpRight className="ml-auto size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden /> : null}
-        </CardDescription>
-        <CardTitle className={cn('cf-num mt-1 text-[2rem] leading-none font-semibold', warn && 'text-destructive')}>
-          {value}
-        </CardTitle>
-      </CardHeader>
-    </Card>
+  const body = (
+    <>
+      <span className="cf-eyebrow flex items-center gap-1.5">
+        {label}
+        {to ? <ArrowUpRight className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden /> : null}
+      </span>
+      <span className={cn('cf-num mt-2 block font-mono text-[2.4rem] leading-none font-medium tracking-[-0.04em] tabular-nums', warn && 'text-destructive')}>
+        {value}
+      </span>
+    </>
   )
-  return to ? <Link to={to} className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">{content}</Link> : content
+  const cls = 'group block px-5 py-5 outline-none sm:px-6 focus-visible:ring-2 focus-visible:ring-ring'
+  return to ? (
+    <Link to={to} className={cn(cls, 'transition-colors hover:bg-muted/60')} style={delay(index)}>{body}</Link>
+  ) : (
+    <div className={cls} style={delay(index)}>{body}</div>
+  )
 }
 
-/** Money tile: one line per currency (amounts in different currencies are never added up). */
-function MoneyTile({ title, items, countKey, action, index }: {
+/** Money figures: one line per currency (amounts in different currencies are never added up). */
+function Money({ title, items, countKey, action }: {
   title: string
   items: CurrencyAmount[]
   countKey: string
   action?: ReactNode
-  index: number
 }) {
   const { t } = useTranslation()
   return (
-    <Card style={delay(index)}>
-      <CardHeader>
-        <CardDescription>{title}</CardDescription>
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="cf-eyebrow">{title}</span>
         {action}
-      </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <p className="text-2xl font-semibold text-muted-foreground">{t('dashboard.nothing')}</p>
-        ) : (
-          <ul className="grid gap-2">
-            {items.map((item) => (
-              <li key={item.currency} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <span className="cf-num text-2xl font-semibold tracking-tight">{formatMoney(item.amount, item.currency)}</span>
-                <span className="text-sm text-muted-foreground">{t(countKey, { count: item.count })}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-2 font-mono text-2xl text-muted-foreground">{t('dashboard.nothing')}</p>
+      ) : (
+        <ul className="mt-2 grid gap-1.5">
+          {items.map((item) => (
+            <li key={item.currency} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <span className="cf-num font-mono text-[1.75rem] leading-none font-medium tracking-[-0.03em] tabular-nums sm:text-[2rem]">
+                {formatMoney(item.amount, item.currency)}
+              </span>
+              <span className="text-sm text-muted-foreground">{t(countKey, { count: item.count })}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -114,94 +148,99 @@ export function DashboardPage() {
     <Page>
       <PageHeader
         title={t('dashboard.title')}
-        description={d.onlyAssignedOrders ? t('dashboard.onlyAssigned') : undefined}
+        description={
+          <>
+            <Greeting />
+            {d.onlyAssignedOrders ? <span className="block">{t('dashboard.onlyAssigned')}</span> : null}
+          </>
+        }
       />
 
-      <div className="cf-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile index={0} label={t('dashboard.clients')} value={d.totalClients} icon={Users} to="/clients" />
-        <StatTile index={1} label={t('dashboard.activeOrders')} value={d.activeOrders} icon={Package} to="/orders" />
-        <StatTile index={2} label={t('dashboard.completedOrders')} value={d.completedOrders} icon={CheckCircle2} />
-        <StatTile index={3} label={t('dashboard.overdueOrders')} value={d.overdueOrders} icon={AlertTriangle} tone="warning" to="/orders" />
-      </div>
+      {/* 1. ledger strip */}
+      <section className="cf-sheet cf-stagger grid overflow-hidden sm:grid-cols-2 xl:grid-cols-4 [&>*]:border-foreground/8 [&>*+*]:border-t sm:[&>*:nth-child(2n)]:border-l sm:[&>*:nth-child(-n+2)]:border-t-0 xl:[&>*]:border-t-0 xl:[&>*+*]:border-l">
+        <Figure index={0} label={t('dashboard.clients')} value={d.totalClients} to="/clients" />
+        <Figure index={1} label={t('dashboard.activeOrders')} value={d.activeOrders} to="/orders" />
+        <Figure index={2} label={t('dashboard.completedOrders')} value={d.completedOrders} />
+        <Figure index={3} label={t('dashboard.overdueOrders')} value={d.overdueOrders} tone="warning" to="/orders" />
+      </section>
 
-      <div className="cf-stagger mt-4 grid gap-4 lg:grid-cols-2">
-        <MoneyTile
-          index={4}
-          title={t('dashboard.paymentsReceived')}
-          items={d.paymentsReceived}
-          countKey="dashboard.paymentsCount"
-          action={
-            <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <SelectTrigger size="sm" className="w-44 justify-self-start" aria-label={t('dashboard.period')}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="thisMonth">{t('dashboard.thisMonth')}</SelectItem>
-                <SelectItem value="last30">{t('dashboard.last30')}</SelectItem>
-                <SelectItem value="thisYear">{t('dashboard.thisYear')}</SelectItem>
-              </SelectContent>
-            </Select>
-          }
-        />
-        <MoneyTile index={5} title={t('dashboard.outstanding')} items={d.outstandingBalances} countKey="dashboard.ordersCount" />
-      </div>
+      <div className="cf-stagger mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        {/* 2. money sheet */}
+        <section className="cf-sheet min-w-0 p-5 sm:p-6" style={delay(4)}>
+          <div className="grid gap-6 border-b border-foreground/8 pb-6 sm:grid-cols-2">
+            <Money
+              title={t('dashboard.paymentsReceived')}
+              items={d.paymentsReceived}
+              countKey="dashboard.paymentsCount"
+              action={
+                <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                  <SelectTrigger size="sm" className="h-7 w-auto gap-1 border-0 bg-transparent px-1.5 font-mono text-[11px] tracking-wide shadow-none" aria-label={t('dashboard.period')}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thisMonth">{t('dashboard.thisMonth')}</SelectItem>
+                    <SelectItem value="last30">{t('dashboard.last30')}</SelectItem>
+                    <SelectItem value="thisYear">{t('dashboard.thisYear')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              }
+            />
+            <Money title={t('dashboard.outstanding')} items={d.outstandingBalances} countKey="dashboard.ordersCount" />
+          </div>
+          <div className="pt-6">
+            <RevenueChart />
+          </div>
+        </section>
 
-      <div className="cf-stagger mt-4" style={delay(6)}>
-        <RevenueChart />
-      </div>
-
-      <div className="cf-stagger mt-4 grid gap-4 lg:grid-cols-2">
-        <Card style={delay(7)}>
-          <CardHeader>
-            <CardTitle>{t('dashboard.byStatus')}</CardTitle>
-            <CardDescription>{t('dashboard.byStatusHint')}</CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* 3. work sheet */}
+        <section className="cf-sheet grid min-w-0 content-start" style={delay(5)}>
+          <div className="p-5 sm:p-6">
+            <span className="cf-eyebrow">{t('dashboard.byStatus')}</span>
+            <p className="mt-1 mb-4 text-sm text-muted-foreground">{t('dashboard.byStatusHint')}</p>
             <StatusBarChart counts={d.ordersByStatus} />
-          </CardContent>
-        </Card>
-
-        <Card style={delay(8)}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="size-4 text-muted-foreground" aria-hidden />
+          </div>
+          <div className="border-t border-foreground/8 p-5 sm:p-6">
+            <span className="cf-eyebrow flex items-center gap-1.5">
+              <Clock className="size-3.5" aria-hidden />
               {t('dashboard.upcoming')}
-            </CardTitle>
-            <CardDescription>{t('dashboard.upcomingHint')}</CardDescription>
-          </CardHeader>
-          <CardContent>
+            </span>
+            <p className="mt-1 mb-3 text-sm text-muted-foreground">{t('dashboard.upcomingHint')}</p>
             {d.upcomingDeadlines.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('dashboard.noUpcoming')}</p>
             ) : (
-              <ul className="cf-stagger grid gap-2">
+              <ul className="cf-stagger -mx-2 grid">
                 {d.upcomingDeadlines.map((o, i) => (
                   <li key={o.id} style={delay(i)}>
                     <Link
                       to={`/orders/${o.id}`}
-                      className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm ring-1 ring-foreground/5 transition-[background-color,transform] duration-150 hover:bg-accent hover:text-accent-foreground active:scale-[0.99]"
+                      className="grid min-w-0 gap-1 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/70"
                     >
-                      <span className="font-mono text-xs text-muted-foreground" translate="no">{o.orderNumber}</span>
-                      <span className="min-w-0 flex-1 truncate font-medium">{o.title}</span>
-                      <OrderStatusBadge status={o.status} />
-                      <span className="tabular-nums">{formatDate(o.deadline)}</span>
+                      <span className="flex items-center justify-between gap-2 font-mono text-xs text-muted-foreground">
+                        <span translate="no">{o.orderNumber}</span>
+                        <span className="text-foreground tabular-nums">{formatDate(o.deadline)}</span>
+                      </span>
+                      <span className="flex min-w-0 items-center justify-between gap-2">
+                        <span className="min-w-0 truncate font-medium">{o.title}</span>
+                        <OrderStatusBadge status={o.status} />
+                      </span>
                     </Link>
                   </li>
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
 
+      <Receivables />
+
       {d.recentActivity ? (
-        <Card className="cf-stagger mt-4" style={delay(9)}>
-          <CardHeader>
-            <CardTitle>{t('dashboard.recent')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <section className="cf-sheet cf-stagger mt-5 p-5 sm:p-6" style={delay(6)}>
+          <span className="cf-eyebrow">{t('dashboard.recent')}</span>
+          <div className="mt-4">
             <ActivityList items={d.recentActivity} />
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
     </Page>
   )

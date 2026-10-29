@@ -7,7 +7,7 @@ export interface Me {
   fullName: string
   email: string
   preferredLanguage: 'kk' | 'ru' | 'en'
-  theme: 'LIGHT' | 'DARK' | 'SYSTEM'
+  theme: 'LIGHT' | 'DARK' | 'PINK' | 'SYSTEM'
   notifications: { deadlines: boolean; overdue: boolean; orderChanges: boolean; payments: boolean }
   avatarUpdatedAt: string | null
   workspaces: { id: string; name: string; role: WorkspaceRole }[]

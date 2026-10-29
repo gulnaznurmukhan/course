@@ -36,7 +36,7 @@ describe('LanguageSwitcher', () => {
     await i18n.changeLanguage('en')
     render(withQueryClient(<ThemeProvider><LanguageSwitcher /></ThemeProvider>))
 
-    await userEvent.click(screen.getByRole('button', { name: 'Қазақша' }))
+    await userEvent.click(screen.getByRole('button', { name: 'KZ' }))
 
     expect(i18n.resolvedLanguage).toBe('kk')
     expect(localStorage.getItem('cf_lang')).toBe('kk')

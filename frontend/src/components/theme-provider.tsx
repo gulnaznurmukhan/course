@@ -1,11 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'light' | 'dark' | 'pink' | 'system'
+export const THEMES: Theme[] = ['light', 'dark', 'pink', 'system']
 
 const STORAGE_KEY = 'cf_theme'
+const META_COLOR = { light: '#edf0f2', dark: '#0c0c0e', pink: '#fbdde9' } as const
 
 interface ThemeContextValue {
   theme: Theme
+  /** The theme actually on screen ("system" resolved to light or dark). */
+  resolved: 'light' | 'dark' | 'pink'
   setTheme: (theme: Theme) => void
 }
 
@@ -14,29 +18,37 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 function readStoredTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' || stored === 'dark' ? stored : 'system'
+    return stored === 'light' || stored === 'dark' || stored === 'pink' ? stored : 'system'
   } catch {
     return 'system'
   }
 }
 
-/** Applies the "dark" class to <html> and keeps the browser chrome colour in step. */
+function resolve(theme: Theme): 'light' | 'dark' | 'pink' {
+  if (theme !== 'system') return theme
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+/** Puts the "dark" or "pink" class on <html> and keeps the browser chrome colour in step. */
 function applyTheme(theme: Theme) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const dark = theme === 'dark' || (theme === 'system' && prefersDark)
-  document.documentElement.classList.toggle('dark', dark)
+  const active = resolve(theme)
+  const root = document.documentElement
+  root.classList.toggle('dark', active === 'dark')
+  root.classList.toggle('pink', active === 'pink')
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-  if (meta) meta.content = dark ? '#1a1a1f' : '#f8f7f4'
+  if (meta) meta.content = META_COLOR[active]
+  return active
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(readStoredTheme)
+  const [resolved, setResolved] = useState<'light' | 'dark' | 'pink'>(() => resolve(theme))
 
   useEffect(() => {
-    applyTheme(theme)
+    setResolved(applyTheme(theme))
     if (theme !== 'system') return
     const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyTheme('system')
+    const onChange = () => setResolved(applyTheme('system'))
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
   }, [theme])
@@ -50,7 +62,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(next)
   }, [])
 
-  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme])
+  const value = useMemo(() => ({ theme, resolved, setTheme }), [theme, resolved, setTheme])
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
