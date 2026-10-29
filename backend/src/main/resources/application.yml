@@ -1,0 +1,148 @@
+# ClientFlow backend configuration.
+# Every secret comes from environment variables. The defaults below are
+# only suitable for local development with docker-compose.
+
+spring:
+  application:
+    name: clientflow-backend
+  profiles:
+    default: dev
+  # Users come from the database (Phase 3); never create Spring's default in-memory user
+  autoconfigure:
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/clientflow}
+    username: ${DB_USERNAME:clientflow}
+    password: ${DB_PASSWORD:clientflow}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      # All application tables live in their own schema (see README: Supabase security)
+      connection-init-sql: SET search_path TO clientflow
+
+  flyway:
+    schemas: clientflow
+    default-schema: clientflow
+    create-schemas: true
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: clientflow
+        jdbc:
+          time_zone: UTC
+
+  session:
+    timeout: 7d
+    jdbc:
+      initialize-schema: never
+      table-name: clientflow.spring_session
+
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      # Mailpit (local) needs neither; Gmail needs both (SMTP_AUTH / SMTP_STARTTLS = true)
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      # Mail is sent right after the request's transaction: never let a slow SMTP hang it
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+  # Email texts in kk / ru / en
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  # Never leak stack traces or exception messages to API clients
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+  # Behind Vercel / docker proxies: trust X-Forwarded-* headers
+  forward-headers-strategy: framework
+  tomcat:
+    max-http-form-post-size: 2MB
+
+management:
+  # Health reflects the database only; a temporary SMTP outage must not
+  # make the hosting platform restart the backend.
+  health:
+    mail:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+app:
+  # Public URL of the frontend, used to build links in emails.
+  # Never derived from the request Host header.
+  public-url: ${APP_PUBLIC_URL:http://localhost:5173}
+  # Session cookie only over HTTPS (always true in the prod profile)
+  session-cookie-secure: ${COOKIE_SECURE:false}
+  # Time zone for business dates (deadlines, "overdue", report periods)
+  timezone: ${APP_TIMEZONE:Asia/Almaty}
+  # Secret for the external cron call (Vercel Cron). Empty = endpoint disabled.
+  cron-secret: ${CRON_SECRET:}
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+  cors:
+    # Comma-separated list. Empty = same-origin only (production via Vercel rewrite).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  mail:
+    from: ${MAIL_FROM:ClientFlow <no-reply@clientflow.local>}
+  tokens:
+    verification-ttl: 24h
+    password-reset-ttl: 30m
+
+springdoc:
+  api-docs:
+    path: /api/v1/openapi
+  swagger-ui:
+    path: /api/v1/docs
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  # Migrations may run with a more privileged account than the application
+  # (see docs/supabase-least-privilege.sql). Defaults to the application account.
+  flyway:
+    user: ${FLYWAY_DB_USERNAME:${DB_USERNAME}}
+    password: ${FLYWAY_DB_PASSWORD:${DB_PASSWORD}}
+  mail:
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+
+app:
+  session-cookie-secure: true
+
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:false}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:false}

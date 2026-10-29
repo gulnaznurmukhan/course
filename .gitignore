@@ -1,0 +1,29 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Backend (Maven / Java)
+backend/target/
+*.class
+*.log
+hs_err_pid*
+
+# Frontend (Node / Vite)
+node_modules/
+frontend/dist/
+frontend/coverage/
+.vercel/
+
+# Local dev mail output (contains verification links)
+dev-mail/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

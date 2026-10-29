@@ -1,0 +1,282 @@
+import { Briefcase, CalendarDays, Check, ChevronsUpDown, FileBarChart, LayoutDashboard, LogOut, Monitor, Moon, Package, Search, Settings, Sun, Tags, Users } from 'lucide-react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+
+import { Logo, LogoMark } from '@/components/logo'
+import type { Theme } from '@/components/theme-provider'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { useCurrentUser, useLogout } from '@/features/auth/use-auth'
+import { NotificationBell } from '@/features/notifications/notification-bell'
+import { PreferencesSync, usePreferences } from '@/features/settings/use-preferences'
+import { useWorkspace } from '@/features/workspace/workspace-context'
+import { SUPPORTED_LANGUAGES } from '@/i18n'
+import { API_URL } from '@/lib/api'
+import { initials } from '@/lib/format'
+
+const NAV_ITEMS = [
+  { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, managersOnly: false },
+  { to: '/orders', labelKey: 'nav.orders', icon: Package, managersOnly: false },
+  { to: '/calendar', labelKey: 'nav.calendar', icon: CalendarDays, managersOnly: false },
+  { to: '/clients', labelKey: 'nav.clients', icon: Users, managersOnly: false },
+  { to: '/services', labelKey: 'nav.services', icon: Tags, managersOnly: false },
+  { to: '/reports', labelKey: 'nav.reports', icon: FileBarChart, managersOnly: true },
+  { to: '/team', labelKey: 'nav.team', icon: Briefcase, managersOnly: false },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings, managersOnly: false },
+] as const
+
+function WorkspaceSwitcher() {
+  const { t } = useTranslation()
+  const { workspaceId, workspaceName, role, workspaces, switchWorkspace } = useWorkspace()
+  const navigate = useNavigate()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <SidebarMenuButton size="lg" aria-label={t('nav.switchWorkspace')} className="data-[state=open]:bg-sidebar-accent">
+          <LogoMark className="size-8" />
+          <div className="grid min-w-0 flex-1 text-left leading-tight">
+            <span className="truncate font-semibold">{workspaceName}</span>
+            <span className="truncate text-xs text-muted-foreground">{t(`roles.${role}`)}</span>
+          </div>
+          <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
+        </SidebarMenuButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuLabel>{t('nav.switchWorkspace')}</DropdownMenuLabel>
+        {workspaces.map((w) => (
+          <DropdownMenuItem
+            key={w.id}
+            onSelect={() => {
+              switchWorkspace(w.id)
+              navigate('/dashboard')
+            }}
+          >
+            <span className="min-w-0 flex-1 truncate">{w.name}</span>
+            <span className="text-xs text-muted-foreground">{t(`roles.${w.role}`)}</span>
+            {w.id === workspaceId ? <Check className="size-4" /> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function UserMenu() {
+  const { t } = useTranslation()
+  const { data: user } = useCurrentUser()
+  const { language, setLanguage, theme, setTheme } = usePreferences()
+  const logout = useLogout()
+  const navigate = useNavigate()
+  if (!user) return null
+
+  const themes: { value: Theme; icon: typeof Sun }[] = [
+    { value: 'light', icon: Sun },
+    { value: 'dark', icon: Moon },
+    { value: 'system', icon: Monitor },
+  ]
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <SidebarMenuButton size="lg" aria-label={t('nav.account')} className="data-[state=open]:bg-sidebar-accent">
+          <Avatar className="size-8 ring-1 ring-foreground/10">
+            {user.avatarUpdatedAt ? (
+              <AvatarImage src={`${API_URL}/users/me/avatar?v=${encodeURIComponent(user.avatarUpdatedAt)}`} alt="" />
+            ) : null}
+            <AvatarFallback className="bg-accent text-accent-foreground">{initials(user.fullName)}</AvatarFallback>
+          </Avatar>
+          <div className="grid min-w-0 flex-1 text-left leading-tight">
+            <span className="truncate font-medium">{user.fullName}</span>
+            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+          </div>
+          <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
+        </SidebarMenuButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="top" className="w-60">
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>{t('language.label')}</DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {SUPPORTED_LANGUAGES.map((lng) => (
+              <DropdownMenuItem key={lng} onSelect={() => setLanguage(lng)}>
+                <span className="flex-1">{t(`language.${lng}`)}</span>
+                {language === lng ? <Check className="size-4" /> : null}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>{t('theme.label')}</DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {themes.map(({ value, icon: Icon }) => (
+              <DropdownMenuItem key={value} onSelect={() => setTheme(value)}>
+                <Icon />
+                <span className="flex-1">{t(`theme.${value}`)}</span>
+                {theme === value ? <Check className="size-4" /> : null}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuItem onSelect={() => navigate('/settings')}>
+          <Settings />
+          {t('nav.settings')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={async () => {
+            await logout.mutateAsync().catch(() => undefined)
+            navigate('/login', { replace: true })
+          }}
+        >
+          <LogOut />
+          {t('auth.logout')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function NavItems() {
+  const { t } = useTranslation()
+  const { pathname } = useLocation()
+  const { setOpenMobile } = useSidebar()
+  const { canManageRecords } = useWorkspace()
+  return (
+    <SidebarMenu className="gap-0.5">
+      {NAV_ITEMS.filter((item) => canManageRecords || !item.managersOnly).map(({ to, labelKey, icon: Icon }) => (
+        <SidebarMenuItem key={to}>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith(to)}
+            tooltip={t(labelKey)}
+            className="h-9 transition-[background-color,color,transform] duration-150 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground"
+          >
+            <Link to={to} onClick={() => setOpenMobile(false)}>
+              <Icon className="size-4" />
+              <span>{t(labelKey)}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
+}
+
+/** Header search: opens the order list filtered by the text (number, title or client). */
+function HeaderSearch() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [text, setText] = useState('')
+  return (
+    <form
+      role="search"
+      className="relative hidden w-full max-w-md sm:block"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (text.trim()) navigate(`/orders?search=${encodeURIComponent(text.trim())}`)
+      }}
+    >
+      <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      <Input
+        type="search"
+        name="q"
+        autoComplete="off"
+        spellCheck={false}
+        className="h-9 rounded-full bg-muted/60 pl-9 shadow-none ring-0 transition-[background-color,box-shadow] focus-visible:bg-background"
+        placeholder={t('nav.searchPlaceholder')}
+        aria-label={t('nav.searchPlaceholder')}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+    </form>
+  )
+}
+
+/** Layout of the signed-in application: sidebar navigation + page content. */
+export function AppShell() {
+  const { t } = useTranslation()
+  const { pathname } = useLocation()
+  return (
+    <TooltipProvider>
+      <PreferencesSync />
+      <SidebarProvider>
+        <Sidebar collapsible="icon" className="border-r-0">
+          <SidebarHeader className="pb-1">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <WorkspaceSwitcher />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <NavItems />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <UserMenu />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+        </Sidebar>
+        {/* min-w-0: wide content (Kanban board, tables) scrolls inside instead of stretching the page */}
+        <SidebarInset className="min-w-0 bg-background">
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-1.5 focus:text-primary-foreground"
+          >
+            {t('nav.skipToContent')}
+          </a>
+          <header
+            className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border/60 bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+            style={{ top: 'env(safe-area-inset-top, 0px)' }}
+          >
+            <SidebarTrigger aria-label={t('nav.menu')} className="-ml-1" />
+            <Logo className="sm:hidden" />
+            <div className="flex min-w-0 flex-1 justify-end sm:justify-center">
+              <HeaderSearch />
+            </div>
+            <NotificationBell />
+          </header>
+          <main id="main" key={pathname} className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+      <Toaster richColors position="top-right" />
+    </TooltipProvider>
+  )
+}
