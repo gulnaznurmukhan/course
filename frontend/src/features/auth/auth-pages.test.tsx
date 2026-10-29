@@ -56,6 +56,22 @@ describe('protected routes', () => {
   })
 })
 
+describe('server unavailable', () => {
+  it('shows a retry screen instead of looping the loader', async () => {
+    const fetchMock = mockBackend(() => ({ status: 502, body: 'Bad gateway' }))
+    renderApp('/login')
+    expect(await screen.findByRole('heading', { name: 'The server is not responding' }, { timeout: 4000 })).toBeInTheDocument()
+    // the error screen stays put: no more requests (it used to loop forever)
+    const calls = callsTo(fetchMock, '/users/me').length
+    await new Promise((r) => setTimeout(r, 500))
+    expect(callsTo(fetchMock, '/users/me')).toHaveLength(calls)
+
+    mockBackend(() => signedOut)
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+  })
+})
+
 describe('login page', () => {
   it('validates fields before calling the API', async () => {
     const fetchMock = mockBackend(() => signedOut)

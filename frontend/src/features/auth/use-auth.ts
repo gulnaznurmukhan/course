@@ -23,6 +23,9 @@ export function useCurrentUser() {
       }
     },
     staleTime: 5 * 60 * 1000,
+    // When the server is down, pages that mount later must not refetch on their own:
+    // that reset the query to "pending" and the guards looped loader <-> page forever
+    retryOnMount: false,
   })
 }
 

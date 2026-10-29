@@ -4,6 +4,9 @@
     "tagline": "Client and order accounting for small businesses"
   },
   "common": {
+    "serverDownTitle": "The server is not responding",
+    "serverDownText": "ClientFlow could not reach its server. Try again in a minute.",
+    "retry": "Try again",
     "loading": "Loading…",
     "email": "Email",
     "password": "Password",
