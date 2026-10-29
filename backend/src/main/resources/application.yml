@@ -127,6 +127,15 @@ spring:
   config:
     activate:
       on-profile: prod
+  # Serverless hosting (Vercel) gives a cold container ~30 s to answer. Beans are created
+  # on first use instead of at boot, so the port opens in a few seconds.
+  # Scheduled jobs and event listeners still work: Spring Boot keeps them eager.
+  main:
+    lazy-initialization: ${LAZY_INIT:true}
+  # The schema is owned and checked by Flyway; skip Hibernate's second metadata scan
+  jpa:
+    hibernate:
+      ddl-auto: none
   # Migrations may run with a more privileged account than the application
   # (see docs/supabase-least-privilege.sql). Defaults to the application account.
   flyway:
