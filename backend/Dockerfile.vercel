@@ -1,4 +1,6 @@
 # Vercel builds this file automatically (Dockerfile.vercel). Same image as Dockerfile.
+# Vercel sends traffic to port 80 unless a PORT variable is set in the *project settings*;
+# an ENV line in this file is invisible to Vercel's router. So the app listens on 80 by default.
 # ---- Build stage: compile and package the Spring Boot jar ----
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
@@ -13,20 +15,21 @@ RUN ./mvnw -B -q package -DskipTests \
  && java -Djarmode=tools -jar target/clientflow-backend-*.jar extract --destination extracted \
  && mv extracted/clientflow-backend-*.jar extracted/app.jar
 
-# ---- Runtime stage: only the JRE and the jar, running as non-root ----
+# ---- Runtime stage: only the JRE and the unpacked jar ----
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-RUN addgroup -S app && adduser -S app -G app
 # Unpacked jar + lib/ starts faster than the single fat jar
 COPY --from=build /workspace/extracted/ ./
-USER app
+# No `USER app` here: port 80 is privileged and a non-root process may not be allowed to bind it
+# inside Vercel's runtime (the container is already isolated per function instance).
+# To go back to non-root, set PORT=8080 in the Vercel project settings and re-add the user.
 
-# The hosting platform supplies PORT; 8080 is the local default
-ENV PORT=8080 \
+# Vercel's default port is 80; a PORT set in the project settings overrides this
+ENV PORT=80 \
     SPRING_PROFILES_ACTIVE=prod \
     JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -XX:TieredStopAtLevel=1 -XX:+UseSerialGC"
-EXPOSE 8080
+EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/actuator/health" || exit 1
