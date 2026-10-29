@@ -139,8 +139,8 @@ spring:
   # Migrations may run with a more privileged account than the application
   # (see docs/supabase-least-privilege.sql). Defaults to the application account.
   flyway:
-    user: ${FLYWAY_DB_USERNAME:${DB_USERNAME}}
-    password: ${FLYWAY_DB_PASSWORD:${DB_PASSWORD}}
+    user: ${FLYWAY_DB_USERNAME:${spring.datasource.username}}
+    password: ${FLYWAY_DB_PASSWORD:${spring.datasource.password}}
   mail:
     properties:
       mail.smtp.auth: true

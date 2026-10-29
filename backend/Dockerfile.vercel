@@ -1,6 +1,4 @@
-# Vercel builds this file automatically (Dockerfile.vercel). Same image as Dockerfile.
-# Vercel sends traffic to port 80 unless a PORT variable is set in the *project settings*;
-# an ENV line in this file is invisible to Vercel's router. So the app listens on 80 by default.
+# Vercel builds this file automatically (Dockerfile.vercel).
 # ---- Build stage: compile and package the Spring Boot jar ----
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
@@ -21,17 +19,16 @@ WORKDIR /app
 
 # Unpacked jar + lib/ starts faster than the single fat jar
 COPY --from=build /workspace/extracted/ ./
-# No `USER app` here: port 80 is privileged and a non-root process may not be allowed to bind it
-# inside Vercel's runtime (the container is already isolated per function instance).
-# To go back to non-root, set PORT=8080 in the Vercel project settings and re-add the user.
 
-# Vercel's default port is 80; a PORT set in the project settings overrides this
+# The start script normalises the environment variables of the Vercel project
+# (database URL, credentials, defaults) and then starts the app. See docker-entrypoint.sh.
+# Runs as root on purpose: Vercel sends traffic to port 80, which a non-root user may not bind.
+COPY docker-entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Vercel injects PORT (80 by default) at runtime and it overrides this value
 ENV PORT=80 \
-    SPRING_PROFILES_ACTIVE=prod \
-    JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -XX:TieredStopAtLevel=1 -XX:+UseSerialGC"
+    SPRING_PROFILES_ACTIVE=prod
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget -qO- "http://127.0.0.1:${PORT}/actuator/health" || exit 1
-
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["/entrypoint.sh"]
